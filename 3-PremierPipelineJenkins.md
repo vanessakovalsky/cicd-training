@@ -52,6 +52,21 @@ pipeline {
 
 ## Bonus : ajouter le clone du projet à votre pipeline
 
+* Dans votre projet sur Jenkins, aller sur `pipeline Syntax` pour accéder au générateur
+    * Dans Sample Step choisir `git: Git`
+    * Renseignez l'url du projet, la branche et les credentials à utiliser
+    * Cliquer sur `Generate Pipeline Script`
+    * Copier la ligne générée
+* Dans votre fichier Jenkinsfile (sur Gitlab), ajouter l'étape suivante dans le fichier (en remplacant la ligne git par la ligne qui a été générée et que vous avez copiée) :
+```
+        stage('clone source') {
+            steps {
+                git credentialsId: '00297df4-5a9e-493a-a899-819ed639dd62', url: 'http://3.129.65.240:8181/cicd-formation/conference-app.git'
+            }
+        }
+```
+* Commiter et pusher le fichier
+* Vérifier le résultat dans Jenkins
 
 ## Pour aller plus loin : 
 * Le paramètrage des pipelines multi-branches nécessites différentes configuration, vous pouvez suivre la documentation (en anglais) disponible ici : https://www.jenkins.io/blog/2019/08/23/introducing-gitlab-branch-source-plugin/ 
