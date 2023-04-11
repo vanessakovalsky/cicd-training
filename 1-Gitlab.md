@@ -7,14 +7,14 @@ Cet exercice a pour objectifs :
 * de découvrir l'utilisation de Git
 
 ## Pré-requis : 
-* Avoir une clé SSH sur sa machine
+
 * Avoir installé l'utilitaire git sur sa machine : https://git-scm.com/book/fr/v2/D%C3%A9marrage-rapide-Installation-de-Git 
 
 ## Créer un compte et un dépôt sur Gitlab
 
 * Aller sur l'url du gitlab
 * Se connecter
-* Se créer un jeton d'accès (token)
+* (optionnel) Se créer un jeton d'accès (token)
 * Forker le projet de demo sur son compte
 *
 ## Récupération du projet en local et travail avec les commandes Git
