@@ -1,0 +1,13 @@
+# Exercice 2 - Gérer les merge Request
+
+## Depuis Gitlab
+* Créer la branche develop  de votre dépôt
+
+## Depuis son poste
+* Récupérer la nouvelle branche
+* Créer une branche de feature, modifier 2 fichiers  et pousser les modifications
+
+## Depuis Gitlab
+* Créer une merge request
+* Merger sur la branche develop
+* Reporter sur la branche master
