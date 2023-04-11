@@ -3,8 +3,8 @@
 ## Depuis Gitlab
 * Créer la branche develop  de votre dépôt
 
-## Depuis son poste
-* Récupérer la nouvelle branche
+## Depuis son poste ou L'interface de gitlab
+* Récupérer la nouvelle branche (si interface de Gitlab, sélectionner la branch develop)
 * Créer une branche de feature, modifier 2 fichiers  et pousser les modifications
 
 ## Depuis Gitlab
