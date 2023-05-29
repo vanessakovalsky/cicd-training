@@ -2,12 +2,12 @@
 
 ## Découvrir l'interface
 
-* Connecter vous sur Artifactory, rechercher dans les depôts lesquels correspondent à des dépôts distants (qui permettent de récupérer des dépendances) et lesquels sont des dépôts locau qui vont nous permettre de stocker nos paquets.
+* Connecter vous sur Artifactory, rechercher dans les depôts lesquels correspondent à des dépôts distants (qui permettent de récupérer des dépendances) et lesquels sont des dépôts locaux qui vont nous permettre de stocker nos paquets.
 * Ouvrir un dépôt, puis aller voir le contenu d'un paquet
 
 ## Intégration avec Jenkins
 
-* Nous allons utiliser Artifactory pour : ré&cupèrer les dépendances et déposer notre paquet
+* Nous allons utiliser Artifactory pour : récupèrer les dépendances et déposer notre paquet
 * Pour cela nous devons d'abord configurer Artifactory avec l'étape suivante à ajouter à notre pipeline:
 
 ```
