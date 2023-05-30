@@ -46,6 +46,7 @@ pipeline {
 * Dans les paramètres du projet de Gitlab, choisir WebHooks
     * Renseignez l'URL de webhook et le token qui ont été généré par Jenkins à l'étape précédente
     * Désactiver `Enable SSL verification` 
+    * Cocher `Push event`
     * Cliquer sur `Add Webhook`
 * Faire un push sur le dépôt sur la branche master (ou celle que vous avez configurer dans Jenkins
 * Vérifier dans Jenkins suite au push qu'un build a bien été déclencher
