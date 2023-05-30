@@ -6,6 +6,10 @@
   - soit nodejs et les outils nodes sont installés sur l'agent
   - soit utilisation d'un conteneur avec une image de type nodejs
 
+## Récupération du code
+
+- git clone / pull du projet
+
 ## Qualité
 
 - linter : eslint, jslint
