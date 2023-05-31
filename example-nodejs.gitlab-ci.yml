@@ -1,0 +1,19 @@
+stages: #On définit les grandes étapes du pipeline
+  - build
+  - info
+
+image: node #On choisit l'image de conteneur à utiliser pour executer les étapes du builds
+
+buildApp: #On définit un job (=un morceau du stage)
+    stage: build # on attache le job à un stage définit au début
+    tags: # permet de selectionner le runner sur lequel on veut executer le script
+        - demo
+    script: # les actions faites par le job
+        - npm install
+
+infoJob:
+    stage: info
+    tags: 
+        - demo
+    script:
+        - echo 'Ma super appli'
