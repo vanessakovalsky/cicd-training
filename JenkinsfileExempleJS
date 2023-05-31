@@ -1,0 +1,50 @@
+pipeline {
+    agent none
+    stages {
+        stage ('Build and test project') {
+            agent {
+                docker {
+                    image 'node:lts-bullseye-slim' 
+                    args '-p 3000:3000' 
+                }
+            }
+            environment {
+                NPM_CONFIG_CACHE = "${WORKSPACE}/.npm"
+            }
+            stages {
+                stage('Cloning Git') {
+                    steps {
+                        git credentialsId: 'LoginVanessaGitlab', url: 'http://ec2-3-129-206-230.us-east-2.compute.amazonaws.com/cicd-formation/demojs.git'
+                    }
+                }
+                stage('Build') { 
+                    steps {
+                        sh 'npm install' 
+                    }
+                }
+                stage('Test') { 
+                    steps {
+                        sh 'npm test'
+                    }
+                }
+            }
+        }
+        
+
+        stage('Docker Build') {
+    	    agent any
+            steps {
+                sh 'docker build -t vanessakovalsky/myimagejs:latest .'
+            }
+        }
+        stage('Docker Push') {
+    	    agent any
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerHub', passwordVariable: 'dockerHubPassword', usernameVariable: 'dockerHubUser')]) {
+                    sh "docker login -u ${env.dockerHubUser} -p ${env.dockerHubPassword}"
+                    sh 'docker push vanessakovalsky/myimagejs:latest'
+                }
+            }
+        }
+    }
+}
