@@ -28,4 +28,9 @@ Cet exercice a pour objectifs :
 * Editer sur l'interface web de gitlab le même fichier et enregistrer le (cela va créer un commit directement)
 * En local, récupérer le travail qui a été fait sur le serveur avec un pull.
 
+## Appréhender les commandes Git
+
+- Installer l'outil Git-It à partir de l'executable officiel disponible ici : https://github.com/jlord/git-it-electron/releases
+- Lancer le et suiver les étapes (sur votre projet Gitlab ou sur un nouveau projet sur Github les commandes Git sont les même), remarque il n'est pas nécessaire d'installer Git ni Github Desktop vous l'avez déjà installé à une étape précédente
+
 
