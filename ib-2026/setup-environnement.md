@@ -75,7 +75,7 @@ irm https://raw.githubusercontent.com/vanessakovalsky/cicd-training/main/ib-2026
 powershell -ExecutionPolicy Bypass -File $env:TEMP\preparer-poste.ps1 -Demarrer
 ```
 - Étapes : Docker Desktop démarré → `Ubuntu-24.04` installée → intégration WSL activée (redémarrage de Docker Desktop) → `stagiaire` (sudo, groupe `docker`) → dépôt cloné dans `~/formation` → `preflight.sh` + `init-env.sh complet` (`-Demarrer`).
-- Étape interactive (premier démarrage d'Ubuntu) : utilisateur `stagiaire`, mot de passe au choix, puis `exit`.
+- Étape interactive (premier démarrage d'Ubuntu) : effacer le nom proposé (`ib`), saisir `stagiaire`, mot de passe au choix (deux fois, sans affichage), puis `exit`.
 - Alerte « Sécurité Windows » pour Docker Desktop Backend : **Annuler** (accès `localhost` suffisant, aucun port exposé au réseau de la salle).
 - Terminal de travail : Windows Terminal › flèche ▾ › `Ubuntu-24.04`, puis `cd ~/formation`.
 
@@ -87,6 +87,7 @@ powershell -ExecutionPolicy Bypass -File $env:TEMP\preparer-poste.ps1 -Demarrer
 | `preflight.sh` : KO sur `*.localhost` (version antérieure au 22/11) | `getent` sans `nss-myhostname` sous WSL | Sans effet : `curl` et les navigateurs résolvent `*.localhost` eux-mêmes |
 | Caractères `\| \ # { [` absents à la frappe | Clavier AZERTY + AltGr à travers Guacamole (constaté en saisie automatisée) `[À VÉRIFIER avec un clavier physique]` | Presse-papier Guacamole : `Ctrl+Alt+Maj` › coller le texte › `Ctrl+V` dans le terminal |
 | Fenêtre Docker Desktop au premier plan après redémarrage | Comportement de Docker Desktop | Réduire la fenêtre avant de saisir dans le terminal |
+| Docker Desktop : « WSL integration with distro 'Ubuntu-24.04' unexpectedly stopped » | Distribution arrêtée (`wsl --terminate`, `wsl --shutdown`) | **Restart the WSL integration** ; éviter `wsl --terminate` pendant la formation |
 
 ### Nettoyage du poste (fin de session)
 ```powershell

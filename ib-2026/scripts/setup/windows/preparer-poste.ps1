@@ -7,7 +7,9 @@
 #   2. Distribution Ubuntu-24.04 installee dans WSL (sans droits administrateur)
 #      -> premier demarrage INTERACTIF : saisir l'utilisateur "stagiaire" et un mot de passe, puis "exit"
 #   3. Integration WSL de Docker Desktop activee pour Ubuntu-24.04 (redemarrage de Docker Desktop)
-#   4. Ubuntu : systemd, utilisateur par defaut, sudo sans mot de passe, groupe docker
+#   4. Ubuntu : sudo sans mot de passe, groupe docker, distribution par defaut
+#      (jamais de "wsl --terminate" : il coupe l'integration Docker Desktop, qui demande alors
+#       un redemarrage manuel ; systemd inutile pour la pile)
 #   5. Depot de la formation clone dans ~/formation (Ubuntu)
 #
 # Usage (PowerShell, session normale) :
@@ -26,7 +28,8 @@ function Etape($m) { Write-Host "`n== $m" -ForegroundColor Cyan }
 function Ok($m)    { Write-Host "  OK  $m" -ForegroundColor Green }
 function Ko($m)    { Write-Host "  KO  $m" -ForegroundColor Red; exit 1 }
 # wsl.exe ecrit en UTF-16 : suppression des caracteres nuls
-function Wsl-Texte { (& wsl.exe @args 2>&1 | Out-String) -replace "`0", "" }
+# (stderr d'un programme externe + ErrorActionPreference Stop = erreur bloquante sous PowerShell 5.1)
+function Wsl-Texte { $ErrorActionPreference = "Continue"; (& wsl.exe @args 2>&1 | Out-String) -replace "`0", "" }
 function Wsl-Root($cmd) { & wsl.exe -d $Distro -u root -- bash -lc $cmd; if ($LASTEXITCODE -ne 0) { Ko "commande root : $cmd" } }
 
 $DockerExe = Join-Path $env:ProgramFiles "Docker\Docker\resources\bin\docker.exe"
@@ -86,23 +89,25 @@ if ($v -notmatch '^\d') { Ko "docker indisponible dans $Distro (Docker Desktop >
 Ok "docker $v dans $Distro"
 
 Etape "4. Configuration d'Ubuntu"
-Wsl-Root "printf '[boot]\nsystemd=true\n[user]\ndefault=$Utilisateur\n' > /etc/wsl.conf"
 Wsl-Root "echo '$Utilisateur ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/$Utilisateur && chmod 440 /etc/sudoers.d/$Utilisateur"
 Wsl-Root "getent group docker >/dev/null || groupadd docker; usermod -aG docker $Utilisateur"
-& wsl.exe --terminate $Distro | Out-Null
 & wsl.exe --set-default $Distro | Out-Null
-$test = (Wsl-Texte -d $Distro -- sh -c "docker ps >/dev/null && echo docker-ok").Trim()
-if ($test -notmatch 'docker-ok') { Ko "$Utilisateur n'accede pas a docker (wsl --shutdown puis relancer)" }
+# chaque nouvel appel wsl.exe ouvre une session qui relit les groupes
+for ($i = 0; $i -lt 12; $i++) {
+    $test = (Wsl-Texte -d $Distro -u $Utilisateur -- sh -c "docker ps >/dev/null 2>&1 && echo docker-ok").Trim()
+    if ($test -match 'docker-ok') { break }; Start-Sleep 5
+}
+if ($test -notmatch 'docker-ok') { Ko "$Utilisateur n'accede pas a docker (fermer les onglets Ubuntu, relancer le script)" }
 Ok "$Utilisateur : sudo, groupe docker, distribution par defaut"
 
 Etape "5. Depot de la formation"
-& wsl.exe -d $Distro --cd "~" -- bash -lc "test -d ~/cicd-training/.git && git -C ~/cicd-training pull -q || git clone -q --depth 1 $Depot ~/cicd-training; ln -sfn ~/cicd-training/$Dossier ~/formation; ls ~/formation/scripts/setup/init-env.sh"
+& wsl.exe -d $Distro -u $Utilisateur --cd "~" -- bash -lc "test -d ~/cicd-training/.git && git -C ~/cicd-training pull -q || git clone -q --depth 1 $Depot ~/cicd-training; ln -sfn ~/cicd-training/$Dossier ~/formation; ls ~/formation/scripts/setup/init-env.sh"
 if ($LASTEXITCODE -ne 0) { Ko "clone de $Depot" }
 Ok "~/formation -> ~/cicd-training/$Dossier"
 
 if ($Demarrer) {
     Etape "6. Controles et demarrage de la pile (5 a 10 min)"
-    & wsl.exe -d $Distro --cd "~" -- bash -lc "cd ~/formation && scripts/setup/preflight.sh && scripts/setup/init-env.sh complet && cat environnement/acces.txt"
+    & wsl.exe -d $Distro -u $Utilisateur --cd "~" -- bash -lc "cd ~/formation && scripts/setup/preflight.sh && scripts/setup/init-env.sh complet && cat environnement/acces.txt"
     if ($LASTEXITCODE -ne 0) { Ko "preflight ou demarrage de la pile" }
 }
 
