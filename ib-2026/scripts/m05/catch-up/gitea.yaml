@@ -1,0 +1,10 @@
+# Etat final du module 05 : serveur Gitea declare dans Jenkins.
+# serverUrl : adresse interne (reseau Docker) ; aliasUrl : adresse annoncee par Gitea
+# dans ses webhooks (ROOT_URL). Sans alias, les webhooks sont recus puis ignores.
+unclassified:
+  giteaServers:
+    servers:
+      - displayName: gitea
+        serverUrl: http://gitea:3000
+        aliasUrl: http://localhost:3000
+        manageHooks: false

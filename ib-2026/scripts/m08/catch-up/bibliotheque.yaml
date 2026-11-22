@@ -1,0 +1,15 @@
+# Etat final du module 08 : bibliotheque partagee de confiance (Global Trusted Pipeline Libraries).
+unclassified:
+  globalLibraries:
+    libraries:
+      - name: fretexpress-lib
+        defaultVersion: v1
+        implicit: false
+        allowVersionOverride: true
+        includeInChangesets: false
+        retriever:
+          modernSCM:
+            scm:
+              git:
+                remote: http://gitea:3000/dev/fretexpress-pipeline-lib.git
+                credentialsId: gitea-dev

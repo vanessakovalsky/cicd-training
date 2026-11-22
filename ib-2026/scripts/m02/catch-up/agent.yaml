@@ -1,0 +1,17 @@
+# Etat final du module 02 : agent SSH "agent-python".
+jenkins:
+  nodes:
+    - permanent:
+        name: agent-python
+        labelString: "python docker"
+        remoteFS: /home/jenkins/agent
+        numExecutors: 2
+        mode: NORMAL
+        retentionStrategy: always
+        launcher:
+          ssh:
+            host: agent
+            port: 22
+            credentialsId: agent-ssh
+            javaPath: /opt/java/openjdk/bin/java
+            sshHostKeyVerificationStrategy: nonVerifyingKeyVerificationStrategy

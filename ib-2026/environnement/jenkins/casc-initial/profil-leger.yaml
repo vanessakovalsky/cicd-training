@@ -1,0 +1,7 @@
+# Profil leger : etapes SonarQube desactivees (quality gate par couverture seule) dans le Jenkinsfile.
+jenkins:
+  globalNodeProperties:
+    - envVars:
+        env:
+          - key: SONARQUBE_ACTIF
+            value: "non"

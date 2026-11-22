@@ -1,0 +1,87 @@
+# Etat final du module 09 : utilisateurs nominatifs, roles (Role-based Authorization
+# Strategy), controleur sans executeur, journal d'audit. Remplace jenkins.yaml.
+jenkins:
+  systemMessage: "Jenkins de formation FretExpress - configuration geree par JCasC"
+  numExecutors: 0
+  mode: EXCLUSIVE
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: admin
+          name: Administrateur
+          password: ${JENKINS_ADMIN_PASSWORD}
+        - id: dev1
+          name: Developpeuse FretExpress
+          password: "${readFile:/run/secrets/formation/utilisateurs_password}"
+        - id: recette1
+          name: Recetteur FretExpress
+          password: "${readFile:/run/secrets/formation/utilisateurs_password}"
+        - id: ops1
+          name: Exploitant FretExpress
+          password: "${readFile:/run/secrets/formation/utilisateurs_password}"
+  authorizationStrategy:
+    roleBased:
+      roles:
+        global:
+          - name: admin
+            description: "Administration complete"
+            permissions:
+              - "Overall/Administer"
+            entries:
+              - user: admin
+          - name: lecteur
+            description: "Lecture de l'instance (tout utilisateur connecte)"
+            permissions:
+              - "Overall/Read"
+            entries:
+              - group: authenticated
+          - name: exploitant
+            description: "Gestion des agents"
+            permissions:
+              - "Agent/Configure"
+              - "Agent/Connect"
+              - "Agent/Disconnect"
+            entries:
+              - user: ops1
+        items:
+          - name: fretexpress-dev
+            description: "Lancer et consulter les pipelines FretExpress"
+            pattern: "fretexpress.*"
+            permissions:
+              - "Job/Read"
+              - "Job/Build"
+              - "Job/Cancel"
+              - "Job/Workspace"
+            entries:
+              - user: dev1
+          - name: fretexpress-recette
+            description: "Consulter et approuver la recette"
+            pattern: "fretexpress.*"
+            permissions:
+              - "Job/Read"
+              - "Job/Build"
+            entries:
+              - user: recette1
+  markupFormatter: plainText
+  crumbIssuer: standard
+unclassified:
+  location:
+    url: http://localhost:8080/
+    adminAddress: jenkins@fretexpress.localhost
+  mailer:
+    smtpHost: mailpit
+    smtpPort: "1025"
+  email-ext:
+    mailAccount:
+      smtpHost: mailpit
+      smtpPort: "1025"
+    defaultRecipients: equipe@fretexpress.localhost
+  audit-trail:
+    logBuildCause: true
+    pattern: ".*/(?:configSubmit|doDelete|postBuildResult|enable|disable|cancelQueue|stop|toggleLogKeep|doWipeOutWorkspace|createItem|createView|toggleOffline|cancelQuietDown|quietDown|restart|exit|safeExit)/?.*"
+    loggers:
+      - logFile:
+          log: /var/jenkins_home/audit/audit.log
+          limit: 10
+          count: 5

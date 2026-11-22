@@ -1,0 +1,7 @@
+# Profil complet : etapes SonarQube actives dans le Jenkinsfile.
+jenkins:
+  globalNodeProperties:
+    - envVars:
+        env:
+          - key: SONARQUBE_ACTIF
+            value: "oui"

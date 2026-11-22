@@ -1,0 +1,42 @@
+// Pipeline FretExpress - etat fin du module 05 : build et tests a chaque modification.
+pipeline {
+    agent { label 'python' }
+
+    options {
+        timestamps()
+        timeout(time: 20, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+        disableConcurrentBuilds()
+    }
+
+    stages {
+        stage('Installation') {
+            steps {
+                sh '''
+                    python3 -m venv .venv
+                    . .venv/bin/activate
+                    pip install --quiet -e ".[dev]"
+                '''
+            }
+        }
+        stage('Tests') {
+            steps {
+                sh '. .venv/bin/activate && pytest --junitxml=reports/junit.xml'
+            }
+        }
+        stage('Build') {
+            steps {
+                sh '. .venv/bin/activate && pip wheel --quiet --no-deps -w dist .'
+            }
+        }
+    }
+
+    post {
+        always {
+            junit allowEmptyResults: true, testResults: 'reports/junit.xml'
+        }
+        success {
+            archiveArtifacts artifacts: 'dist/*.whl', fingerprint: true
+        }
+    }
+}

@@ -1,0 +1,202 @@
+{
+ "builds": [
+  {
+   "number": 1,
+   "result": "SUCCESS",
+   "timestamp": 1794211200000,
+   "duration": 360000,
+   "description": "deploy-prod 1.0.1",
+   "changeSets": [
+    {
+     "items": [
+      {
+       "commitId": "c001",
+       "timestamp": 1794208500000,
+       "msg": "feat: changement 1"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "number": 2,
+   "result": "SUCCESS",
+   "timestamp": 1794218400000,
+   "duration": 360000,
+   "description": "deploy-prod 1.0.2",
+   "changeSets": [
+    {
+     "items": [
+      {
+       "commitId": "c002",
+       "timestamp": 1794215700000,
+       "msg": "feat: changement 2"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "number": 3,
+   "result": "SUCCESS",
+   "timestamp": 1794229200000,
+   "duration": 360000,
+   "description": null,
+   "changeSets": [
+    {
+     "items": [
+      {
+       "commitId": "c003",
+       "timestamp": 1794226500000,
+       "msg": "feat: changement 3"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "number": 4,
+   "result": "SUCCESS",
+   "timestamp": 1794232800000,
+   "duration": 360000,
+   "description": "deploy-prod 1.0.4",
+   "changeSets": [
+    {
+     "items": [
+      {
+       "commitId": "c004",
+       "timestamp": 1794230100000,
+       "msg": "feat: changement 4"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "number": 5,
+   "result": "SUCCESS",
+   "timestamp": 1794297600000,
+   "duration": 360000,
+   "description": "deploy-prod 1.0.5",
+   "changeSets": [
+    {
+     "items": [
+      {
+       "commitId": "c005",
+       "timestamp": 1794294900000,
+       "msg": "feat: changement 5"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "number": 6,
+   "result": "FAILURE",
+   "timestamp": 1794304800000,
+   "duration": 360000,
+   "description": "echec-prod 1.0.6",
+   "changeSets": [
+    {
+     "items": [
+      {
+       "commitId": "c006",
+       "timestamp": 1794302100000,
+       "msg": "feat: changement 6"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "number": 7,
+   "result": "SUCCESS",
+   "timestamp": 1794308400000,
+   "duration": 360000,
+   "description": "deploy-prod 1.0.7",
+   "changeSets": [
+    {
+     "items": [
+      {
+       "commitId": "c007",
+       "timestamp": 1794305700000,
+       "msg": "feat: changement 7"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "number": 8,
+   "result": "SUCCESS",
+   "timestamp": 1794315600000,
+   "duration": 360000,
+   "description": "deploy-prod 1.0.8",
+   "changeSets": [
+    {
+     "items": [
+      {
+       "commitId": "c008",
+       "timestamp": 1794312900000,
+       "msg": "feat: changement 8"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "number": 9,
+   "result": "SUCCESS",
+   "timestamp": 1794322800000,
+   "duration": 360000,
+   "description": null,
+   "changeSets": [
+    {
+     "items": [
+      {
+       "commitId": "c009",
+       "timestamp": 1794320100000,
+       "msg": "feat: changement 9"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "number": 10,
+   "result": "SUCCESS",
+   "timestamp": 1794326400000,
+   "duration": 360000,
+   "description": "deploy-prod 1.0.10",
+   "changeSets": [
+    {
+     "items": [
+      {
+       "commitId": "c010",
+       "timestamp": 1794323700000,
+       "msg": "feat: changement 10"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "number": 11,
+   "result": "SUCCESS",
+   "timestamp": 1794330000000,
+   "duration": 360000,
+   "description": "deploy-prod 1.0.11",
+   "changeSets": [
+    {
+     "items": [
+      {
+       "commitId": "c011",
+       "timestamp": 1794327300000,
+       "msg": "feat: changement 11"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

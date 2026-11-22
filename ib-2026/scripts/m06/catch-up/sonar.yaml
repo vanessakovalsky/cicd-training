@@ -1,0 +1,8 @@
+# Etat final du module 06 : serveur SonarQube declare dans Jenkins.
+unclassified:
+  sonarGlobalConfiguration:
+    buildWrapperEnabled: false
+    installations:
+      - name: sonarqube
+        serverUrl: http://sonarqube:9000
+        credentialsId: sonar-token

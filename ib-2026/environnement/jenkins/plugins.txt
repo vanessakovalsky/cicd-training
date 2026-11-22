@@ -1,0 +1,21 @@
+# Versions relevees sur le banc de test du 13/11/2026 (Jenkins 2.580.2 LTS)
+configuration-as-code:2147.v8a_8d38668c72
+workflow-aggregator:608.v67378e9d3db_1
+pipeline-graph-view:1053.v9df19e6ceed2
+git
+gitea:286.v0740a_413c1eb_
+ssh-slaves:3.1097.v868116049892
+credentials-binding
+junit:1458.1460.vd53b_087eeb_2c
+coverage:4.3567.v34a_294650f39
+sonar:2.19.0
+role-strategy:928.vc60b_edb_fea_e1
+matrix-auth:3.3
+email-ext:2038.v7b_8817a_499d9
+mailer
+timestamper
+ws-cleanup
+pipeline-utility-steps
+audit-trail:472.vb_51e5934ec50
+antisamy-markup-formatter
+thinBackup:2.1.5

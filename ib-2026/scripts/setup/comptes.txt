@@ -1,0 +1,11 @@
+# Liste UNIQUE des comptes stagiaires (un numero NN par ligne), lue par tous les scripts.
+# 00 = compte de demonstration du formateur.
+00
+01
+02
+03
+04
+05
+06
+07
+08

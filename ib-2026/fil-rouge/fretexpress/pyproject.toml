@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fretexpress"
+version = "1.0.0"
+description = "API de calcul de tarifs d'expedition - FretExpress"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi==0.162.5",
+    "uvicorn==0.54.0",
+    "httpx==0.28.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.2.0",
+    "pytest-cov==7.1.0",
+    "pytest-randomly==5.1.0",
+    "ruff==0.17.5",
+    "twine==7.0.0",
+    "pip-audit==2.10.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["integration: tests d'integration (base SQLite, API)"]
+filterwarnings = ["ignore:Using .httpx. with .starlette.testclient.:UserWarning"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
