@@ -1,12 +1,16 @@
 # Preparation d'un poste Windows 11 (Docker Desktop + WSL 2) pour la formation CI/CD.
-# Valide le 22/11/2026 sur un poste de salle virtuelle (Guacamole, Windows 11 Entreprise,
+# Valide le 22/11/2026 (etape 3 revue le 23/11) sur un poste de salle virtuelle (Guacamole, Windows 11 Entreprise,
 # Docker Desktop 4.93 / Engine 29.8, session non elevee, sans Git ni Python cote Windows).
 #
 # Etapes (relancable, chaque etape deja faite est sautee) :
 #   1. Docker Desktop demarre (moteur WSL 2)
 #   2. Distribution Ubuntu-24.04 installee dans WSL (sans droits administrateur)
 #      -> premier demarrage INTERACTIF : saisir l'utilisateur "stagiaire" et un mot de passe, puis "exit"
-#   3. Integration WSL de Docker Desktop activee pour Ubuntu-24.04 (redemarrage de Docker Desktop)
+#   3. Integration WSL de Docker Desktop activee pour Ubuntu-24.04 (arret de Docker Desktop,
+#      ecriture des reglages, redemarrage), puis verification de docker dans Ubuntu ;
+#      en cas d'echec : activation manuelle guidee (Settings > Resources > WSL integration > Apply)
+#      Session du 23/11/2026, Docker Desktop 4.99 : reglage ecrit pendant que Docker Desktop
+#      tournait perdu au "docker desktop restart" (integration "None selected")
 #   4. Ubuntu : sudo sans mot de passe, groupe docker, distribution par defaut
 #      (jamais de "wsl --terminate" : il coupe l'integration Docker Desktop, qui demande alors
 #       un redemarrage manuel ; systemd inutile pour la pile)
@@ -72,20 +76,44 @@ Etape "3. Integration WSL de Docker Desktop"
 $reglages = Join-Path $env:APPDATA "Docker\settings-store.json"
 $json = if (Test-Path $reglages) { Get-Content $reglages -Raw | ConvertFrom-Json } else { [pscustomobject]@{} }
 $actuelles = @($json.IntegratedWslDistros)
-if ($actuelles -notcontains $Distro) {
-    Copy-Item $reglages "$reglages.avant-formation" -ErrorAction SilentlyContinue
-    $json | Add-Member -Force -NotePropertyName IntegratedWslDistros -NotePropertyValue (@($actuelles | Where-Object { $_ }) + $Distro)
-    $json | Add-Member -Force -NotePropertyName EnableIntegrationWithDefaultWslDistro -NotePropertyValue $true
-    # UTF-8 sans BOM (Set-Content -Encoding UTF8 de PowerShell 5.1 ajoute un BOM)
-    [IO.File]::WriteAllText($reglages, ($json | ConvertTo-Json -Depth 10), (New-Object Text.UTF8Encoding $false))
-    & $DockerExe desktop restart | Out-Null
-    Start-Sleep 20
+function Docker-Dans-Distro($essais) {
+    for ($i = 0; $i -lt $essais; $i++) {
+        $v = (Wsl-Texte -d $Distro -u root -- sh -c "docker version --format '{{.Server.Version}}' 2>/dev/null").Trim()
+        if ($v -match '(?m)^\d+\.\d+') { return $Matches[0] }; Start-Sleep 5
+    }
+    return ""
 }
-for ($i = 0; $i -lt 40; $i++) {
-    $v = (Wsl-Texte -d $Distro -u root -- sh -c "docker version --format '{{.Server.Version}}' 2>/dev/null").Trim()
-    if ($v -match '^\d') { break }; Start-Sleep 5
+$v = Docker-Dans-Distro 1
+if (-not $v) {
+    if ($actuelles -notcontains $Distro) {
+        if (-not (Test-Path "$reglages.avant-formation")) { Copy-Item $reglages "$reglages.avant-formation" -ErrorAction SilentlyContinue }
+        # Docker Desktop reecrit ses reglages en s'arretant : arret AVANT l'ecriture du fichier
+        & $DockerExe desktop stop | Out-Null
+        Start-Sleep 5
+        $json = if (Test-Path $reglages) { Get-Content $reglages -Raw | ConvertFrom-Json } else { [pscustomobject]@{} }
+        $actuelles = @($json.IntegratedWslDistros)
+        $json | Add-Member -Force -NotePropertyName IntegratedWslDistros -NotePropertyValue @(@($actuelles | Where-Object { $_ }) + $Distro | Select-Object -Unique)
+        $json | Add-Member -Force -NotePropertyName EnableIntegrationWithDefaultWslDistro -NotePropertyValue $true
+        # UTF-8 sans BOM (Set-Content -Encoding UTF8 de PowerShell 5.1 ajoute un BOM)
+        [IO.File]::WriteAllText($reglages, ($json | ConvertTo-Json -Depth 10), (New-Object Text.UTF8Encoding $false))
+        & $DockerExe desktop start | Out-Null
+        for ($i = 0; $i -lt 60; $i++) { & $DockerExe info *> $null; if ($LASTEXITCODE -eq 0) { break }; Start-Sleep 5 }
+    }
+    $v = Docker-Dans-Distro 24
+    # Pile deja demarree (relance du script) : Traefik et l'agent montent des fichiers d'Ubuntu,
+    # absents pendant le redemarrage sans integration -> conteneurs arretes (code 127) a relancer
+    if ($v) { Wsl-Texte -d $Distro -u root -- sh -c "docker ps -aq --filter label=com.docker.compose.project=cicd --filter status=exited | xargs -r docker start" | Out-Null }
 }
-if ($v -notmatch '^\d') { Ko "docker indisponible dans $Distro (Docker Desktop > Settings > Resources > WSL integration)" }
+# Verification : reglage non pris en compte -> activation manuelle guidee, puis nouvelle verification
+while (-not $v) {
+    Write-Host ""
+    Write-Host "  docker indisponible dans $Distro. Activation manuelle :" -ForegroundColor Yellow
+    Write-Host "    Docker Desktop > Settings (roue dentee) > Resources > WSL integration" -ForegroundColor Yellow
+    Write-Host "    > cocher $Distro (liste 'additional distros') > Apply (ou Apply & restart)" -ForegroundColor Yellow
+    $r = Read-Host "  Puis appuyer sur Entree (q pour abandonner)"
+    if ($r -eq "q") { Ko "docker indisponible dans $Distro (integration WSL de Docker Desktop)" }
+    $v = Docker-Dans-Distro 24
+}
 Ok "docker $v dans $Distro"
 
 Etape "4. Configuration d'Ubuntu"

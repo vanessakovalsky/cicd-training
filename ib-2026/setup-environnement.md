@@ -84,6 +84,7 @@ powershell -ExecutionPolicy Bypass -File $env:TEMP\preparer-poste.ps1 -Demarrer
 |---|---|---|
 | `permission denied ... docker.sock` | Groupe `docker` pris en compte à la session suivante | `exit`, rouvrir l'onglet Ubuntu (ou `wsl --shutdown`) |
 | `The command 'docker' could not be found in this WSL 2 distro` | Intégration WSL désactivée | Docker Desktop › Settings › Resources › WSL integration › `Ubuntu-24.04` |
+| Étape 3 : `KO docker indisponible dans Ubuntu-24.04` (Docker Desktop 4.99, session du 23/11) | Réglage écrit par le script perdu au redémarrage de Docker Desktop (intégration « None selected ») | Settings › WSL integration › cocher `Ubuntu-24.04` › **Apply**, puis relancer le script. Script corrigé : arrêt de Docker Desktop avant écriture, puis activation manuelle guidée si la vérification échoue |
 | `preflight.sh` : KO sur `*.localhost` (version antérieure au 22/11) | `getent` sans `nss-myhostname` sous WSL | Sans effet : `curl` et les navigateurs résolvent `*.localhost` eux-mêmes |
 | Caractères `\| \ # { [` absents à la frappe | Clavier AZERTY + AltGr à travers Guacamole (constaté en saisie automatisée) `[À VÉRIFIER avec un clavier physique]` | Presse-papier Guacamole : `Ctrl+Alt+Maj` › coller le texte › `Ctrl+V` dans le terminal |
 | Fenêtre Docker Desktop au premier plan après redémarrage | Comportement de Docker Desktop | Réduire la fenêtre avant de saisir dans le terminal |
