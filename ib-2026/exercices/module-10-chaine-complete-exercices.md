@@ -78,5 +78,24 @@ Retard : `scripts/m09/catch-up/catch-up.sh`. Historique DORA généré par le fo
 
 ---
 
+## Défi 10.4 ⭐⭐⭐ — Variante GitLab CI : incident et mesure DORA (autonome)
+**Durée** : 30 min (binômes ayant fait les défis 07.5 et 08.6) · **Objectif** : parties B à D du lab 10.1 avec la chaîne GitLab ; comparer les mesures
+**Énoncé** :
+1. Zone `SUISSE` (ou petit changement) par MR GitLab ; recette lancée manuellement ; production vérifiée.
+2. Incident simulé (`deploy/.simuler-echec-prod`) par MR GitLab : job `production` en échec (relancé 2 fois par `retry`) ; **Operate** › **Environments** › `production` : déploiement `Failed`, version en service inchangée.
+3. Réparation par MR ; temps entre l'échec et le déploiement réussi suivant.
+4. Jeton d'accès personnel `dev` (avatar › **Edit profile** › **Access tokens**, portée `read_api`) puis :
+   ```bash
+   GITLAB_TOKEN=<JETON> python3 <FORMATION>/scripts/m10/labs/dora_gitlab.py
+   ```
+   Résultat attendu : même format que `dora.py` (déploiements, fréquence, délai, taux d'échec, restauration).
+5. Comparer avec les mesures Jenkins : quelle source est la plus fiable ? (convention de description Jenkins vs statut natif des déploiements GitLab)
+**Critères de réussite** :
+- [ ] Un déploiement `Failed` suivi d'un `Success` dans l'environnement `production`
+- [ ] 4 indicateurs relevés depuis GitLab et comparés à ceux de Jenkins
+- [ ] Une différence de conception Jenkins / GitLab expliquée (marquage manuel vs suivi natif des déploiements)
+
+---
+
 ## Bonus 🚀
 Ajouter au rapport DORA la durée médiane du pipeline (hors attente d'approbation) en utilisant l'API Jenkins (`/wfapi` absent : utiliser la durée totale et l'horodatage de l'approbation dans la console).

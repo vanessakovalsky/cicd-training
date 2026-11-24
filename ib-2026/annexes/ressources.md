@@ -40,6 +40,17 @@
 - Docker : https://docs.docker.com/
 - Spécification des annotations d'image OCI : https://github.com/opencontainers/image-spec/blob/main/annotations.md
 
+## GitLab CI (variante ⭐⭐⭐)
+- Référence `.gitlab-ci.yml` : https://docs.gitlab.com/ci/yaml/
+- Migrer de Jenkins vers GitLab CI : https://docs.gitlab.com/ci/migration/jenkins/
+- Variables CI/CD : https://docs.gitlab.com/ci/variables/
+- Environnements et déploiements : https://docs.gitlab.com/ci/environments/
+- Jobs manuels et règles : https://docs.gitlab.com/ci/jobs/job_control/
+- Cache : https://docs.gitlab.com/ci/caching/
+- `include` : https://docs.gitlab.com/ci/yaml/includes/
+- Exécuteur Docker du runner : https://docs.gitlab.com/runner/executors/docker/
+- GitLab dans Docker : https://docs.gitlab.com/install/docker/
+
 ## Indicateurs DORA
 - Programme DORA : https://dora.dev/
 - Guide des indicateurs : https://dora.dev/guides/dora-metrics-four-keys/

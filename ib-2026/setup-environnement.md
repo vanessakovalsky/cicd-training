@@ -97,6 +97,26 @@ wsl --unregister Ubuntu-24.04
 Copy-Item $env:APPDATA\Docker\settings-store.json.avant-formation $env:APPDATA\Docker\settings-store.json
 ```
 
+## 2 ter. Variante GitLab CI (optionnelle, défis ⭐⭐⭐ des modules 07, 08, 10)
+GitLab CE 19.6.1 + runner 19.6.1 dans la même pile (profil Compose `gitlab`). Jobs exécutés dans l'image de l'agent Jenkins, sur le réseau `cicd`, avec le socket Docker et le volume Traefik : mêmes scripts `deploy/`, même registre Gitea.
+
+| Élément | Valeur |
+|---|---|
+| URL | http://localhost:8929 (depuis les conteneurs : `http://gitlab:8929`) |
+| Comptes | `root` (`GITLAB_ROOT_PASSWORD` de `.env`) ; `dev` (même mot de passe que dans Gitea) |
+| Projet créé | `dev/fretexpress` (vide) |
+| Ressources | Image ≈ 1,5 Go compressée ; 8 Go de RAM minimum en mode mémoire réduite (documentation GitLab) |
+
+```bash
+scripts/setup/gitlab/init-gitlab.sh    # idempotent, 4 min au premier lancement (poste de la salle)
+```
+Résultat attendu (fin) :
+```
+[hh:mm:ss] Runner : online (online attendu sous 1 min)
+[hh:mm:ss] GitLab : http://localhost:8929 - utilisateur dev, mot de passe GITEA_DEV_PASSWORD (environnement/.env)
+```
+Nettoyage : `scripts/setup/gitlab/nettoyer-gitlab.sh` (conteneurs, volumes, jeton) ; `--images` pour supprimer aussi les images.
+
 ## 3. VM Google Cloud (une par stagiaire)
 
 ### Prérequis formateur

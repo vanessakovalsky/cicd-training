@@ -1,0 +1,32 @@
+# Modeles Python FretExpress (equivalent de vars/pythonInstall.groovy et fretexpressVersion.groovy).
+# Utilisation : include: - project: dev/fretexpress-ci-lib / ref: v1 / file: templates/python.yml
+
+variables:
+  PIP_CACHE_DIR: $CI_PROJECT_DIR/.cache/pip   # dans le projet : seul chemin que le cache GitLab sauvegarde
+
+# Installation du venv avec cache pip partage entre pipelines (cle : pyproject.toml)
+.python:
+  image:
+    name: cicd-formation/agent-python:local
+    entrypoint: [""]
+  cache:
+    key:
+      files: [pyproject.toml]
+    paths: [.cache/pip]
+  before_script:
+    - mkdir -p reports
+    - python3 -m venv .venv && . .venv/bin/activate
+    - pip install --quiet --upgrade pip
+    - pip install --quiet -e ".[dev]"
+
+# Version <majeur>.<mineur>.<1000 + numero de pipeline>, transmise aux jobs suivants (dotenv)
+.version:
+  image:
+    name: cicd-formation/agent-python:local
+    entrypoint: [""]
+  script:
+    - BASE=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+    - echo "VERSION=${BASE%.*}.$((1000 + CI_PIPELINE_IID))" | tee version.env
+  artifacts:
+    reports:
+      dotenv: version.env

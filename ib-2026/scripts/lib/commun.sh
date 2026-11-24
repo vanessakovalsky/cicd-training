@@ -70,7 +70,16 @@ gitea_pousser_etat() { # gitea_pousser_etat DOSSIER_SOURCE MESSAGE [DEPOT]
 
 # Construit l'etat du fil rouge a la fin du module donne (base + correctifs cumules).
 etat_fil_rouge() { # etat_fil_rouge NUMERO_MODULE DOSSIER_CIBLE
-  local fin="$1" cible="$2" m
+  local fin="$1" cible="$2" m pub="$FIL_ROUGE/solutions/.publication"
+  # Paquet stagiaire : solutions publiees seulement avec les corrections du module
+  if [ -f "$pub" ]; then
+    for m in 01 02 03 04 05 06 07 08 09 10; do
+      if grep -q "^attendues=.*\b$m\b" "$pub" && ! grep -q "^publiees=.*\b$m\b" "$pub"; then
+        erreur "Solutions du module $m non publiees : etat fin module $fin impossible. Formateur : publier les corrections du module $m (CORRECTIONS_PUBLIEES), puis git pull dans $RACINE"
+      fi
+      [ "$m" = "$fin" ] && break
+    done
+  fi
   rm -rf "$cible" && mkdir -p "$cible"
   cp -r "$FIL_ROUGE/fretexpress"/. "$cible"/
   for m in 01 02 03 04 05 06 07 08 09 10; do

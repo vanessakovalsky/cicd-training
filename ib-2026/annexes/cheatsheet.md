@@ -73,6 +73,20 @@ pipeline {
 | Audit | `scripts/m09/labs/audit-securite.sh` |
 | DORA | `JENKINS_TOKEN=<jeton> python3 scripts/m10/labs/dora.py` |
 
+## Jenkins → GitLab CI (variante ⭐⭐⭐)
+| Jenkins | GitLab CI |
+|---|---|
+| `stage` + `steps` | job (`stage:`, `script:`) |
+| `parallel` · `matrix` | jobs d'un même stage · `parallel: matrix:` |
+| `when { branch 'main' }` | `rules: - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH` |
+| `input` + `submitter` | `when: manual` + `allow_failure: false` |
+| `withCredentials` | Variable CI/CD masquée et protégée |
+| `env.VERSION` entre étapes | Artefact `reports: dotenv:` |
+| `@Library('lib@v1')` | `include: - project: ... ref: v1` + `extends:` |
+| `retry(2)` · `timeout` | `retry: 2` · `timeout:` |
+| `disableConcurrentBuilds` | `resource_group:` · `interruptible:` |
+| `junit` · `recordCoverage` | `artifacts: reports: junit:` · `coverage_report:` |
+
 ## Indicateurs DORA
 `Débit = Fréquence de déploiement + Délai de mise en production`
 `Stabilité = Taux d'échec des changements + Temps de restauration`

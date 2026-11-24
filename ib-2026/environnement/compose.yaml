@@ -1,6 +1,7 @@
 # Pile CI/CD de la formation : Jenkins + agent + Gitea + Traefik + Mailpit (+ SonarQube).
 # Profil leger (defaut)   : docker compose up -d
 # Profil complet (Sonar)  : docker compose --profile complet up -d
+# Variante GitLab (3 etoiles, M07-M10) : scripts/setup/gitlab/init-gitlab.sh
 name: cicd
 
 services:
@@ -95,6 +96,52 @@ services:
     networks: [cicd]
     restart: unless-stopped
 
+  # --- Variante GitLab CI (defis 3 etoiles des modules 07, 08, 10) -----------------------
+  # Memoire reduite : puma en mode simple, sans supervision Prometheus, sans KAS ni registre
+  # (images et paquets : registre Gitea, comme pour Jenkins). Mails vers Mailpit.
+  gitlab:
+    image: gitlab/gitlab-ce:19.6.1-ce.0
+    profiles: [gitlab]
+    hostname: gitlab
+    shm_size: 256m
+    environment:
+      GITLAB_ROOT_PASSWORD: ${GITLAB_ROOT_PASSWORD:-}   # lu au premier demarrage seulement
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://localhost:8929'
+        nginx['listen_port'] = 8929
+        puma['worker_processes'] = 0
+        sidekiq['concurrency'] = 5
+        prometheus_monitoring['enable'] = false
+        gitlab_kas['enable'] = false
+        registry['enable'] = false
+        gitlab_rails['usage_ping_enabled'] = false
+        gitlab_rails['gitlab_email_from'] = 'gitlab@fretexpress.localhost'
+        gitlab_rails['smtp_enable'] = true
+        gitlab_rails['smtp_address'] = 'mailpit'
+        gitlab_rails['smtp_port'] = 1025
+        gitlab_rails['smtp_tls'] = false
+        gitlab_rails['smtp_enable_starttls_auto'] = false
+        gitlab_rails['smtp_openssl_verify_mode'] = 'none'
+    ports:
+      - "8929:8929"   # http://localhost:8929 ; depuis les conteneurs : http://gitlab:8929
+    volumes:
+      - gitlab-config:/etc/gitlab
+      - gitlab-logs:/var/log/gitlab
+      - gitlab-data:/var/opt/gitlab
+    networks: [cicd]
+    restart: unless-stopped
+
+  # Executeur docker : jobs dans l'image de l'agent Jenkins, sur le reseau cicd, avec le socket
+  # Docker et le volume Traefik (memes scripts deploy/ que Jenkins). Enregistrement : init-gitlab.sh
+  gitlab-runner:
+    image: gitlab/gitlab-runner:alpine-v19.6.1
+    profiles: [gitlab]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - gitlab-runner-config:/etc/gitlab-runner
+    networks: [cicd]
+    restart: unless-stopped
+
 networks:
   cicd:
     name: cicd
@@ -107,3 +154,7 @@ volumes:
   sonarqube-data:
   sonarqube-extensions:
   sonarqube-logs:
+  gitlab-config:
+  gitlab-logs:
+  gitlab-data:
+  gitlab-runner-config:

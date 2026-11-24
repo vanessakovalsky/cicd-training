@@ -1,0 +1,18 @@
+# Modele de deploiement FretExpress (equivalent de vars/deployer.groovy).
+# Variable du job : CIBLE = int | recette | prod. Variables CI/CD : REGISTRE_USER, REGISTRE_TOKEN.
+
+.deployer:
+  image:
+    name: cicd-formation/agent-python:local
+    entrypoint: [""]
+  before_script: []
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  retry: 2   # deploiement idempotent : relance sans risque (erreur reseau, registre lent)
+  script:
+    - |
+      if [ "$CIBLE" = prod ]; then
+        deploy/blue-green.sh "$VERSION"
+      else
+        deploy/deployer.sh "$CIBLE" "$VERSION"
+      fi

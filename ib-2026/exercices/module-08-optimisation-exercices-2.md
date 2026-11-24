@@ -57,5 +57,41 @@ Mesures de durée : sur des builds de BRANCHE (pas de déploiement ni d'attente 
 
 ---
 
+## Défi 08.6 ⭐⭐⭐ — Variante GitLab CI : parallélisme, cache et modèles partagés (autonome)
+**Durée** : 40 min · **Objectif** : pipeline GitLab du défi 07.5 optimisé comme le Jenkinsfile du module 08
+**Prérequis** : défi 07.5 terminé (pipeline GitLab jusqu'à la production). Retard : copier `<FORMATION>/fil-rouge/solutions/m07/.gitlab-ci.yml`.
+
+### Équivalences
+| Jenkins | GitLab CI |
+|---|---|
+| `parallel { ... }` | Jobs d'un MÊME stage (parallèles par défaut) ; `needs:` pour démarrer sans attendre le stage précédent |
+| `matrix` | `parallel: matrix:` (un job par combinaison) |
+| Volume `agent-cache` + `PIP_CACHE_DIR` | `cache:` avec clé `files: [pyproject.toml]` (chemin DANS le projet) |
+| Bibliothèque partagée `@Library('...@v1')` | `include: project:` + `ref: v1` ; modèles = jobs cachés (`.nom`) + `extends:` |
+| `retry(2)` | `retry: 2` |
+| `timeout`, `disableConcurrentBuilds` | `timeout:`, `interruptible: true`, `resource_group:` |
+
+### Étapes clés
+1. Projet GitLab `dev/fretexpress-ci-lib` (vide) ; publier les modèles fournis et les étiqueter :
+   ```bash
+   cp -r <FORMATION>/fil-rouge/fretexpress-ci-lib ~/fretexpress-ci-lib && cd ~/fretexpress-ci-lib
+   git init -b main && git add . && git commit -m "feat: modeles GitLab CI v1"
+   git remote add origin http://localhost:8929/dev/fretexpress-ci-lib.git
+   git push -u origin main && git tag -a v1 -m "v1" && git push origin v1
+   ```
+   Lire `templates/python.yml` et `templates/deploiement.yml` : quel job caché remplace quelle fonction de `fretexpress-pipeline-lib` ?
+2. Branche `perf/gitlab` de `fretexpress` : `include:` des deux modèles en `v1` ; jobs `version`, `lint`, `tests`, `audit-dependances`, `build`, `publication` en `extends: .python` ; déploiements en `extends: .deployer` avec `variables: { CIBLE: int }` (`recette`, `prod`).
+3. Tests en matrice : `parallel: matrix: - SUITE: [unit, integration]` ; chaque job produit `.coverage.$SUITE` (artefact) ; job `couverture` avec `needs: [tests]` : `coverage combine`, rapport `cobertura`.
+4. Graphe : `needs: []` sur les contrôles (démarrage immédiat) ; **Build** › onglet **Needs** du pipeline : vérifier les dépendances.
+5. Pousser deux fois de suite ; relever la durée du job `lint` (cache froid puis chaud) et la ligne `Successfully extracted cache` du second.
+6. Fiabiliser : `interruptible: true` par défaut, `false` sur `publication` et les déploiements ; `retry: 2` sur les déploiements (modèle) et JAMAIS sur `twine upload` ; `resource_group: production`.
+
+### Critères de réussite
+- [ ] 5 jobs de contrôle en parallèle (`lint`, `tests: [unit]`, `tests: [integration]`, `audit-dependances`, puis `couverture`)
+- [ ] Modèles chargés depuis `fretexpress-ci-lib@v1` ; plus aucun `deploy/*.sh` écrit dans `.gitlab-ci.yml`
+- [ ] Tableau du lab 08.4 complété d'une colonne GitLab (durée cache chaud, lignes du fichier, jobs parallèles)
+
+---
+
 ## Bonus 🚀
 Remplacer l'agent global par des agents par étape et `stash` / `unstash` (préparation du défi 10.3) : quel coût supplémentaire (clonage, installation) pour quel gain (exécuteur libéré pendant l'approbation) ?
