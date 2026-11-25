@@ -8,7 +8,7 @@ Bloc 2 : séquences S5.3, S5.4. Point de départ : labs du bloc 1 terminés (`mo
 
 ### Étapes
 1. Jeton Gitea : connexion `dev` › avatar › **Paramètres** › **Applications** › **Générer un nouveau jeton** : nom `jenkins`, permissions **repository : Lecture et écriture**, **package : Lecture et écriture**, **issue : Lecture et écriture**, **user : Lecture**, **organization : Lecture** (sans ce droit, liste des dépôts vide à l'étape 4) › copier le jeton (affiché une seule fois).
-2. Credential Jenkins : **Manage Jenkins** › **Credentials** › **System** › **Global credentials** › **Add Credentials** : **Username with password**, Username `dev`, Password = jeton, ID `gitea-dev`, Scope **Global**.
+2. Credential Jenkins : **Manage Jenkins** › **Credentials** › **System** › **Global credentials** › **Add Credentials** : **Username with password**, Username `dev`, Password = jeton, ID `gitea-dev`, Scope **Global**. Credential `gitea-dev` déjà créé (nouveau jeton) : `gitea-dev` › **Update credential** › **Change Password** › coller le jeton › **Save** (sans **Change Password**, l'ancien jeton reste en place).
 3. Serveur Gitea : **Manage Jenkins** › **System** › **Gitea Servers** › **Add** : Display Name `gitea`, Server URL `http://gitea:3000`, Alias URL `http://localhost:3000`, **Manage hooks** décoché › **Save**.
 4. Job multibranche : **New Item** › `fretexpress` › **Multibranch Pipeline** :
    - **Branch Sources** › **Add source** › **Gitea** : Server `gitea`, Credentials `gitea-dev`, Owner `dev`, Repository `fretexpress`
