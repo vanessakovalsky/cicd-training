@@ -38,6 +38,7 @@ Mails reçus dans Mailpit : `ECHEC fretexpress/main #6`, puis `REPARE fretexpres
 | `ERROR: Cannot install fretexpress 1.0.0 ... and fretexpress 1.0.6` au `docker build` | Ancienne wheel dans `dist/` | `rm -rf dist reports` en début de build |
 | `HTTPError: 409 Conflict` à l'upload | Version déjà publiée (build rejoué) | Nouveau build (nouveau numéro) ; ne jamais republier une version |
 | `unauthorized` au `docker push` | Jeton sans droit `package` | Jeton Gitea avec **package : écriture** |
+| `401` à l'upload ou au `docker push` après un rattrapage (`scripts/m0[5-7]/catch-up/catch-up.sh`) | Rattrapage = jeton Gitea `jenkins` supprimé puis régénéré ; ancien jeton recollé dans `gitea-dev` (ou build lancé avant la fin du rattrapage) | Jeton valide = `environnement/secrets/gitea_token` ; `gitea-dev` › **Update** › **Change Password** › coller ce jeton › **Save** ; ou relancer le rattrapage sans toucher au credential |
 | `http: server gave HTTP response to HTTPS client` | Registre appelé par un nom autre que `localhost` | Utiliser `localhost:3000` (ou `insecure-registries` du démon) |
 | Aucun mail | Notification sur `success` seulement, ou SMTP | `failure` / `fixed` ; SMTP `mailpit:1025` (JCasC) |
 
