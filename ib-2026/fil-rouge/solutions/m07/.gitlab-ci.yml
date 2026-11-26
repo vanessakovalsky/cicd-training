@@ -1,0 +1,137 @@
+# Pipeline FretExpress - variante GitLab CI, etat fin du module 07 (defi 07.5).
+# Equivalent du Jenkinsfile : main -> integration (auto) -> recette (manuel) -> production (blue/green).
+# Variables CI/CD du projet (Settings > CI/CD > Variables, masquees et protegees) :
+#   GITEA_USER / GITEA_TOKEN       : publication (jeton Gitea avec droit package : ecriture)
+#   REGISTRE_USER / REGISTRE_TOKEN : deploiement (jeton Gitea package : lecture)
+
+default:
+  image:
+    name: cicd-formation/agent-python:local   # image de l'agent Jenkins, construite localement
+    entrypoint: [""]                          # sinon l'entrypoint SSH de l'agent bloque le job
+  before_script:
+    - python3 -m venv .venv && . .venv/bin/activate
+    - pip install --quiet -e ".[dev]"
+
+variables:
+  REGISTRE: localhost:3000
+  IMAGE: localhost:3000/dev/fretexpress
+  PYPI_URL: http://gitea:3000/api/packages/dev/pypi
+
+workflow:   # un seul pipeline par commit : celui de la MR s'il en existe une, sinon celui de la branche
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+
+stages: [preparation, controles, build, publication, integration, recette, production]
+
+version:
+  stage: preparation
+  before_script: []
+  script:
+    # 1.0.<1000 + numero de pipeline> : aucune collision avec les versions publiees par Jenkins
+    - BASE=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+    - echo "VERSION=${BASE%.*}.$((1000 + CI_PIPELINE_IID))" | tee version.env
+  artifacts:
+    reports:
+      dotenv: version.env   # VERSION disponible dans tous les jobs suivants
+
+analyse-statique:
+  stage: controles
+  script:
+    - mkdir -p reports
+    - ruff check --output-format=junit --output-file=reports/ruff.xml .
+  artifacts:
+    when: always
+    reports:
+      junit: reports/ruff.xml
+
+tests:
+  stage: controles
+  script:
+    - mkdir -p reports
+    - pytest --junitxml=reports/junit.xml --cov=fretexpress --cov-branch
+      --cov-report=term --cov-report=xml:reports/coverage.xml
+  coverage: '/^TOTAL.*\s(\d+(?:\.\d+)?)%$/'
+  artifacts:
+    when: always
+    reports:
+      junit: reports/junit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: reports/coverage.xml
+
+build:
+  stage: build
+  script:
+    - sed -i "s/^version = .*/version = \"${VERSION}\"/" pyproject.toml
+    - pip wheel --quiet --no-deps -w dist .
+    - docker build --quiet -t "$IMAGE:$VERSION"
+      --label org.opencontainers.image.version="$VERSION"
+      --label org.opencontainers.image.revision="$CI_COMMIT_SHA" .
+  artifacts:
+    paths: [dist/*.whl]
+    expire_in: 1 week
+
+publication:
+  stage: publication
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - twine upload --non-interactive --repository-url "$PYPI_URL"
+      -u "$GITEA_USER" -p "$GITEA_TOKEN" dist/*.whl
+    - echo "$GITEA_TOKEN" | docker login "$REGISTRE" -u "$GITEA_USER" --password-stdin
+    - docker push --quiet "$IMAGE:$VERSION"
+    - docker logout "$REGISTRE"
+
+.deploiement:   # modele commun (job cache : nom commencant par un point)
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  before_script: []   # pas d'installation Python : scripts shell seulement
+
+deploiement-integration:
+  extends: .deploiement
+  stage: integration
+  environment:
+    name: integration
+    url: http://int.fretexpress.localhost
+  script:
+    - deploy/deployer.sh int "$VERSION"
+
+recette:
+  extends: .deploiement
+  stage: recette
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual            # approbation : bouton "Run" dans le pipeline
+  allow_failure: false        # pipeline "bloque" tant que la recette n'est pas lancee
+  environment:
+    name: recette
+    url: http://recette.fretexpress.localhost
+  script:
+    - deploy/deployer.sh recette "$VERSION"
+
+production:
+  extends: .deploiement
+  stage: production
+  resource_group: production   # un seul deploiement de production a la fois
+  environment:
+    name: production
+    url: http://fretexpress.localhost
+  script:
+    - deploy/blue-green.sh "$VERSION"
+
+retour-arriere:
+  extends: .deploiement
+  stage: production
+  needs: [production]
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+  allow_failure: true         # optionnel : ne bloque pas le pipeline
+  environment:
+    name: production
+    action: access            # ne cree pas de nouveau deploiement
+  script:
+    - deploy/blue-green.sh --retour-arriere
