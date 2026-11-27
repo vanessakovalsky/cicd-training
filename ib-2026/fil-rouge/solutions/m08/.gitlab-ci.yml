@@ -1,0 +1,139 @@
+# Pipeline FretExpress - variante GitLab CI, etat fin du module 08 (defi 08.6) :
+# controles en parallele, matrice de tests, cache pip, modeles partages (fretexpress-ci-lib@v1).
+
+include:
+  - project: dev/fretexpress-ci-lib
+    ref: v1
+    file: [templates/python.yml, templates/deploiement.yml]
+
+variables:
+  REGISTRE: localhost:3000
+  IMAGE: localhost:3000/dev/fretexpress
+  PYPI_URL: http://gitea:3000/api/packages/dev/pypi
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+
+default:
+  interruptible: true   # nouveau commit sur la branche : le pipeline precedent est annule
+  timeout: 15 minutes
+
+stages: [preparation, controles, build, publication, integration, recette, production]
+
+version:
+  extends: .version
+  stage: preparation
+
+# --- Controles : les jobs d'un meme stage s'executent en parallele -------------------------
+lint:
+  extends: .python
+  stage: controles
+  needs: []   # demarre sans attendre le stage precedent (graphe de dependances)
+  script:
+    - ruff check --output-format=junit --output-file=reports/ruff.xml .
+  artifacts:
+    when: always
+    reports:
+      junit: reports/ruff.xml
+
+tests:
+  extends: .python
+  stage: controles
+  needs: []
+  parallel:
+    matrix:
+      - SUITE: [unit, integration]   # 2 jobs : "tests: [unit]" et "tests: [integration]"
+  script:
+    - if [ "$SUITE" = unit ]; then MARQUEUR="not integration"; else MARQUEUR=integration; fi
+    - COVERAGE_FILE=.coverage.$SUITE pytest -m "$MARQUEUR" --junitxml=reports/junit-$SUITE.xml
+      --cov=fretexpress --cov-branch --cov-report=
+  artifacts:
+    when: always
+    paths: [".coverage.*"]
+    reports:
+      junit: reports/junit-*.xml
+
+audit-dependances:
+  extends: .python
+  stage: controles
+  needs: []
+  script:
+    - pip-audit --progress-spinner off --skip-editable
+
+couverture:
+  extends: .python
+  stage: controles
+  needs: [tests]   # attend les 2 jobs de la matrice
+  script:
+    - coverage combine .coverage.unit .coverage.integration
+    - coverage report
+    - coverage xml -o reports/coverage.xml
+  coverage: '/^TOTAL.*\s(\d+(?:\.\d+)?)%$/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: reports/coverage.xml
+
+# --- Build, publication, deploiements ----------------------------------------------------
+build:
+  extends: .python
+  stage: build
+  needs: [version, lint, tests, audit-dependances]
+  script:
+    - sed -i "s/^version = .*/version = \"${VERSION}\"/" pyproject.toml
+    - pip wheel --quiet --no-deps -w dist .
+    - docker build --quiet -t "$IMAGE:$VERSION"
+      --label org.opencontainers.image.version="$VERSION"
+      --label org.opencontainers.image.revision="$CI_COMMIT_SHA" .
+  artifacts:
+    paths: [dist/*.whl]
+    expire_in: 1 week
+
+publication:
+  extends: .python
+  stage: publication
+  needs: [version, build]
+  interruptible: false   # jamais interrompre une publication en cours
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - twine upload --non-interactive --repository-url "$PYPI_URL"
+      -u "$GITEA_USER" -p "$GITEA_TOKEN" dist/*.whl   # NON idempotent : pas de retry
+    - echo "$GITEA_TOKEN" | docker login "$REGISTRE" -u "$GITEA_USER" --password-stdin
+    - for i in 1 2; do docker push --quiet "$IMAGE:$VERSION" && break; done   # push idempotent
+    - docker logout "$REGISTRE"
+
+deploiement-integration:
+  extends: .deployer
+  stage: integration
+  needs: [version, publication]
+  interruptible: false
+  variables: { CIBLE: int }
+  environment: { name: integration, url: "http://int.fretexpress.localhost" }
+
+recette:
+  extends: .deployer
+  stage: recette
+  needs: [version, deploiement-integration]
+  interruptible: false
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+  allow_failure: false
+  timeout: 30 minutes
+  variables: { CIBLE: recette }
+  environment: { name: recette, url: "http://recette.fretexpress.localhost" }
+
+production:
+  extends: .deployer
+  stage: production
+  needs: [version, recette]
+  interruptible: false
+  resource_group: production
+  variables: { CIBLE: prod }
+  environment: { name: production, url: "http://fretexpress.localhost" }

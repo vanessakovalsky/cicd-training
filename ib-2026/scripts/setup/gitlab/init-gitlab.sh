@@ -97,6 +97,19 @@ else
   info "Runner runner-formation enregistre"
 fi
 
+# Plusieurs jobs a la fois (jobs paralleles d'un stage, parallel: matrix) : 1 par defaut a l'enregistrement
+docker exec cicd-gitlab-runner-1 sed -i 's/^concurrent = .*/concurrent = 4/' /etc/gitlab-runner/config.toml
+info "Runner : 4 jobs simultanes"
+
+# 6. Auto DevOps desactive pour toute l'instance : sinon un push sans .gitlab-ci.yml lance un
+#    pipeline Auto DevOps (code_quality, build...) qui occupe le runner (constate le 27/11)
+code="$(gl_api PUT /application/settings -o /dev/null -w '%{http_code}' --data 'auto_devops_enabled=false')"
+if [ "$code" = 200 ]; then
+  info "Auto DevOps desactive (instance)"
+else
+  info "Auto DevOps : desactivation refusee (HTTP $code) ; par projet : Settings > CI/CD > Auto DevOps"
+fi
+
 etat_runner="$(gl_api GET '/runners/all?type=instance_type' \
   | champ "next((r['status'] for r in d if r['description'] == 'runner-formation'), 'absent')")"
 info "Runner : $etat_runner (online attendu sous 1 min)"

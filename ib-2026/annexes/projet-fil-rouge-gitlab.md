@@ -47,6 +47,15 @@ default:
     entrypoint: [""]
 ```
 
+### Erreurs fréquentes (constatées le 27/11)
+| Symptôme | Cause | Déblocage |
+|---|---|---|
+| `JENKINS_AGENT_SSH_PUBKEY absente`, job en échec immédiat | Point d'entrée SSH de l'image de l'agent ; une `image:` d'une seule ligne dans un job remplace celle de `default:` | `entrypoint: [""]` (forme longue de `image:`) dans `default:` ET dans tout job qui redéfinit l'image |
+| `... does not appear to be a Python project: neither 'setup.py' nor 'pyproject.toml' found` | `pip install -e .` à la racine (`before_script` recopié de FretExpress) ; Hipster Shop = un `requirements.txt` par service | `before_script: []` ; `cd src/<service>` puis `pip install -r requirements.txt` ; chemins des rapports préfixés par `src/<service>/` |
+| Pipeline avec des jobs `code_quality`, `secret_detection`, `container_scanning` jamais écrits | Auto DevOps : push sans `.gitlab-ci.yml` | **Settings** › **CI/CD** › **Auto DevOps** : décocher ; annuler le pipeline ; pousser le `.gitlab-ci.yml` dès le premier commit |
+| Jobs d'un même stage exécutés l'un après l'autre, longtemps `pending` | Runner à `concurrent = 1` (avant correctif de `init-gitlab.sh`) | `docker exec cicd-gitlab-runner-1 sed -i 's/^concurrent = .*/concurrent = 4/' /etc/gitlab-runner/config.toml` (relu automatiquement) |
+| Variable vide dans un job de branche | Variable **Protected** : branches protégées seulement (`main`) | Décocher **Protected** pour `SONAR_TOKEN` ; garder **Masked** |
+
 ## Périmètre conseillé
 - Service principal : `recommendationservice` (Python, logique testable, pas de base de données).
 - Extension : `emailservice` (Python) ; `shippingservice` ou `productcatalogservice` (Go, image `golang`).

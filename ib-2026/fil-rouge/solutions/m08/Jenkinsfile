@@ -1,0 +1,145 @@
+// Pipeline FretExpress - etat fin du module 08 : parallele, cache, bibliotheque partagee.
+@Library('fretexpress-lib@v1') _
+
+pipeline {
+    agent { label 'python' }
+
+    options {
+        timestamps()
+        timeout(time: 30, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '30'))
+        disableConcurrentBuilds()
+    }
+
+    environment {
+        REGISTRE = 'localhost:3000'
+        IMAGE    = "${REGISTRE}/dev/fretexpress"
+        PYPI_URL = 'http://gitea:3000/api/packages/dev/pypi'
+    }
+
+    stages {
+        stage('Installation') {
+            steps {
+                pythonInstall()
+                fretexpressVersion()
+            }
+        }
+        stage('Controles') {
+            parallel {
+                stage('Lint') {
+                    steps {
+                        sh '. .venv/bin/activate && ruff check --output-format=junit --output-file=reports/ruff.xml .'
+                    }
+                }
+                stage('Tests unitaires') {
+                    steps {
+                        sh '''
+                            . .venv/bin/activate
+                            COVERAGE_FILE=.coverage.unit pytest -m "not integration" \
+                                --junitxml=reports/junit-unit.xml --cov=fretexpress --cov-branch --cov-report=
+                        '''
+                    }
+                }
+                stage('Tests integration') {
+                    steps {
+                        sh '''
+                            . .venv/bin/activate
+                            COVERAGE_FILE=.coverage.integration pytest -m integration \
+                                --junitxml=reports/junit-integration.xml --cov=fretexpress --cov-branch --cov-report=
+                        '''
+                    }
+                }
+                stage('Audit dependances') {
+                    steps {
+                        sh '. .venv/bin/activate && pip-audit --progress-spinner off --skip-editable'
+                    }
+                }
+            }
+        }
+        stage('Couverture') {
+            steps {
+                sh '''
+                    . .venv/bin/activate
+                    coverage combine .coverage.unit .coverage.integration
+                    coverage xml -o reports/coverage.xml
+                '''
+            }
+        }
+        stage('SonarQube') {
+            when { environment name: 'SONARQUBE_ACTIF', value: 'oui' }
+            steps {
+                withSonarQubeEnv('sonarqube') {
+                    sh 'sonar-scanner -Dsonar.projectVersion=$VERSION \
+                        -Dsonar.python.xunit.reportPath=reports/junit-unit.xml,reports/junit-integration.xml'
+                }
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+        stage('Build') {
+            steps {
+                sh '''
+                    . .venv/bin/activate
+                    pip wheel --quiet --no-deps -w dist .
+                    docker build --quiet -t "$IMAGE:$VERSION" \
+                        --label org.opencontainers.image.version="$VERSION" \
+                        --label org.opencontainers.image.revision="$GIT_COMMIT" .
+                '''
+            }
+        }
+        stage('Publication') {
+            when { branch 'main' }
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'gitea-dev',
+                        usernameVariable: 'GITEA_USER', passwordVariable: 'GITEA_TOKEN')]) {
+                    sh '''
+                        . .venv/bin/activate
+                        twine upload --non-interactive --repository-url "$PYPI_URL" \
+                            -u "$GITEA_USER" -p "$GITEA_TOKEN" dist/*.whl
+                        echo "$GITEA_TOKEN" | docker login "$REGISTRE" -u "$GITEA_USER" --password-stdin
+                    '''
+                    retry(2) {   // push idempotent : relance sans risque en cas d'erreur reseau
+                        sh 'docker push --quiet "$IMAGE:$VERSION"'
+                    }
+                    sh 'docker logout "$REGISTRE"'
+                }
+            }
+        }
+        stage('Deploiement integration') {
+            when { branch 'main' }
+            steps { deployer('int', env.VERSION) }
+        }
+        stage('Recette') {
+            when {
+                beforeInput true   // sinon l'approbation est demandee AVANT le test de branche
+                branch 'main'
+            }
+            options { timeout(time: 30, unit: 'MINUTES') }
+            input {
+                id 'recette'
+                message 'Deployer cette version en recette ?'
+                ok 'Deployer en recette'
+                submitter 'admin,recette1'
+            }
+            steps { deployer('recette', env.VERSION) }
+        }
+        stage('Production') {
+            when { branch 'main' }
+            steps { deployer('prod', env.VERSION) }
+        }
+    }
+
+    post {
+        always {
+            junit allowEmptyResults: true, testResults: 'reports/junit-*.xml, reports/ruff.xml'
+            recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'reports/coverage.xml']],
+                           sourceDirectories: [[path: 'src']],
+                           qualityGates: [[metric: 'BRANCH', threshold: 80.0,
+                                           baseline: 'PROJECT', criticality: 'UNSTABLE']])
+        }
+        success { archiveArtifacts artifacts: 'dist/*.whl', fingerprint: true }
+        failure { notifierEquipe('failure') }
+        fixed   { notifierEquipe('fixed') }
+    }
+}
